@@ -47,8 +47,9 @@ LogDensityProblems.capabilities(prob::CMBLensingLogDensityProblem) = 0
 LogDensityProblems.dimension(prob::CMBLensingLogDensityProblem) = length(prob.Ωstart)
 
 function to_from_vec(Ω::FieldTuple)
-    to_vec(Ω) = Ω[:]
-    from_vec(vec) = first(promote(vec, Ω))
+    Ω₀ = LenseBasis(Ω)
+    to_vec(Ω) = LenseBasis(Ω)[:]
+    from_vec(vec) = first(promote(vec, Ω₀))
     return to_vec, from_vec
 end
 
