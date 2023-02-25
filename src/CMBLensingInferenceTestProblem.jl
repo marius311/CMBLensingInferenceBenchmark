@@ -19,7 +19,7 @@ function load_cmb_lensing_problem(;storage, T, Nside)
 
     (;f,  ϕ, ds) = load_sim(; storage, T, Nside, pol=:P, θpix=3, μKarcminT=1, beamFWHM=1, seed=0)
     (;f°, ϕ°) = mix(ds; f, ϕ)
-    θ = ComponentVector(r=0.2, Aϕ=1)
+    θ = ComponentVector(r=T(0.2), Aϕ=T(1))
     Ωtrue = LenseBasis(FieldTuple(;f°, ϕ°, θ=log.(θ)))
 
     Ωstart = let
@@ -33,7 +33,7 @@ function load_cmb_lensing_problem(;storage, T, Nside)
         Diagonal(FieldTuple(
             f° = diag(pinv(D)^2 * (pinv(Cf) + B̂'*M̂'*pinv(Cn̂)*M̂*B̂)),
             ϕ° = diag(pinv(G)^2 * (pinv(Cϕ) + pinv(Nϕ))),
-            θ = ComponentVector(r=1., Aϕ=1)
+            θ = ComponentVector(r=T(1), Aϕ=T(1))
         ))
     end
 
