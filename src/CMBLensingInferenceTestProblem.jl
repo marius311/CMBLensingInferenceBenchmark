@@ -13,6 +13,7 @@ struct CMBLensingLogDensityProblem
     Ωstart
     Ωtrue
     Λmass
+    ncalls
 end
 
 function load_cmb_lensing_problem(;storage, T, Nside)
@@ -37,8 +38,16 @@ function load_cmb_lensing_problem(;storage, T, Nside)
         ))
     end
 
-    return CMBLensingLogDensityProblem(ds, Ωstart, Ωtrue, Λmass)
-    
+    ncalls = Ref(0)
+    ds.logprior = let orig_logprior = ds.logprior
+        function (;Ω...)
+            ncalls[] += 1
+            orig_logprior(;Ω...)
+        end
+    end
+
+    return CMBLensingLogDensityProblem(ds, Ωstart, Ωtrue, Λmass, ncalls)
+
 end
 
 (prob::CMBLensingLogDensityProblem)(Ω::FieldTuple) = logpdf(Mixed(prob.ds); Ω.f°, Ω.ϕ°, θ=exp.(Ω.θ))
