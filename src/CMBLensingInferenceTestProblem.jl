@@ -16,9 +16,12 @@ struct CMBLensingLogDensityProblem
     ncalls
 end
 
-function load_cmb_lensing_problem(;storage, T, Nside)
+function load_cmb_lensing_problem(;storage, T, Nside, masking=false)
 
-    (;f,  ϕ, ds) = load_sim(; storage, T, Nside, pol=:P, θpix=3, μKarcminT=1, beamFWHM=1, seed=0)
+    θpix = 3
+    field_deg = θpix*Nside/60
+    pixel_mask_kwargs = masking ? (edge_padding_deg=0.15*field_deg, apodization_deg=0, num_ptsrcs=0) : nothing
+    (;f,  ϕ, ds) = load_sim(; pixel_mask_kwargs, storage, T, Nside, θpix, pol=:P, μKarcminT=1, beamFWHM=1, seed=0)
     (;f°, ϕ°) = mix(ds; f, ϕ)
     θ = ComponentVector(r=T(0.2), Aϕ=T(1))
     Ωtrue = LenseBasis(FieldTuple(;f°, ϕ°, θ=log.(θ)))
@@ -50,7 +53,7 @@ function load_cmb_lensing_problem(;storage, T, Nside)
 
 end
 
-(prob::CMBLensingLogDensityProblem)(Ω::FieldTuple) = logpdf(Mixed(prob.ds); Ω.f°, Ω.ϕ°, θ=exp.(Ω.θ))
+(prob::CMBLensingLogDensityProblem)(Ω::FieldTuple) = logpdf(Mixed(prob.ds); Ω.f°, Ω.ϕ°, θ=exp.(Ω.θ)) + sum(Ω.θ)
 LogDensityProblems.logdensity(prob::CMBLensingLogDensityProblem, Ω::FieldTuple) = prob(Ω)
 LogDensityProblems.capabilities(prob::CMBLensingLogDensityProblem) = 0
 LogDensityProblems.dimension(prob::CMBLensingLogDensityProblem) = length(prob.Ωstart)
