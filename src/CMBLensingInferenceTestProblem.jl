@@ -5,6 +5,7 @@ using CMBLensing
 using ComponentArrays
 using LogDensityProblems
 using LinearAlgebra
+using NamedTupleTools
 
 export load_cmb_lensing_problem
 
@@ -16,7 +17,13 @@ struct CMBLensingLogDensityProblem
     ncalls
 end
 
-function load_cmb_lensing_problem(;storage, T, Nside, masking=false)
+function load_cmb_lensing_problem(;
+    storage, 
+    T, 
+    Nside, 
+    masking = false,
+    global_parameters = true
+)
 
     θpix = 3
     field_deg = θpix*Nside/60
@@ -26,19 +33,21 @@ function load_cmb_lensing_problem(;storage, T, Nside, masking=false)
     θ = ComponentVector(r=T(0.2), Aϕ=T(1))
     Ωtrue = LenseBasis(FieldTuple(;f°, ϕ°, θ=log.(θ)))
 
+    Ωkeys = global_parameters ? (:f°, :ϕ°, :θ) : (:f°, :ϕ°)
+
     Ωstart = let
         (;f, ϕ) = MAP_joint(ds, progress=false)
         (;f°, ϕ°) = mix(ds; f, ϕ)
-        LenseBasis(FieldTuple(;f°, ϕ°, θ=log.(θ)))
+        LenseBasis(select(FieldTuple(;f°, ϕ°, θ=log.(θ)), Ωkeys))
     end
 
     Λmass = let
         (;Cf, Cϕ, Nϕ, D, G, B̂, M̂, Cn̂) = ds
-        Diagonal(FieldTuple(
+        Diagonal(select(FieldTuple(
             f° = diag(pinv(D)^2 * (pinv(Cf) + B̂'*M̂'*pinv(Cn̂)*M̂*B̂)),
             ϕ° = diag(pinv(G)^2 * (pinv(Cϕ) + pinv(Nϕ))),
             θ = ComponentVector(r=T(1), Aϕ=T(1))
-        ))
+        ),Ωkeys))
     end
 
     ncalls = Ref(0)
@@ -53,7 +62,13 @@ function load_cmb_lensing_problem(;storage, T, Nside, masking=false)
 
 end
 
-(prob::CMBLensingLogDensityProblem)(Ω::FieldTuple) = logpdf(Mixed(prob.ds); Ω.f°, Ω.ϕ°, θ=exp.(Ω.θ)) + sum(Ω.θ)
+function (prob::CMBLensingLogDensityProblem)(Ω::FieldTuple)
+    if haskey(Ω,:θ)
+        logpdf(Mixed(prob.ds); Ω.f°, Ω.ϕ°, θ=exp.(Ω.θ)) + sum(Ω.θ)
+    else
+        logpdf(Mixed(prob.ds); Ω.f°, Ω.ϕ°)
+    end
+end
 LogDensityProblems.logdensity(prob::CMBLensingLogDensityProblem, Ω::FieldTuple) = prob(Ω)
 LogDensityProblems.capabilities(prob::CMBLensingLogDensityProblem) = 0
 LogDensityProblems.dimension(prob::CMBLensingLogDensityProblem) = length(prob.Ωstart)
@@ -65,5 +80,7 @@ function to_from_vec(Ω_template::FieldTuple)
     from_vec(vec) = identity.(first(promote(vec, Ω_template₀)))
     return to_vec, from_vec
 end
+
+NamedTupleTools.select(ft::FieldTuple, ks) = FieldTuple(select(ft.fs, ks))
 
 end
