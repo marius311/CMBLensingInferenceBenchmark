@@ -6,6 +6,7 @@ using ComponentArrays
 using LogDensityProblems
 using LinearAlgebra
 using NamedTupleTools
+using Zygote
 
 export load_cmb_lensing_problem
 
@@ -15,6 +16,8 @@ struct CMBLensingLogDensityProblem
     Ωtrue
     Λmass
     ncalls
+    ncalls_logpdf
+    ncalls_grad_logpdf
 end
 
 function load_cmb_lensing_problem(;
@@ -51,14 +54,17 @@ function load_cmb_lensing_problem(;
     end
 
     ncalls = Ref(0)
+    ncalls_logpdf = Ref(0)
+    ncalls_grad_logpdf = Ref(0)
     ds.logprior = let orig_logprior = ds.logprior
         function (;Ω...)
             ncalls[] += 1
+            isderiving() ? (ncalls_grad_logpdf[] += 1) : (ncalls_logpdf[] += 1)
             orig_logprior(;Ω...)
         end
     end
 
-    return CMBLensingLogDensityProblem(ds, Ωstart, Ωtrue, Λmass, ncalls)
+    return CMBLensingLogDensityProblem(ds, Ωstart, Ωtrue, Λmass, ncalls, ncalls_logpdf, ncalls_grad_logpdf)
 
 end
 
@@ -82,5 +88,9 @@ function to_from_vec(Ω_template::FieldTuple)
 end
 
 NamedTupleTools.select(ft::FieldTuple, ks) = FieldTuple(select(ft.fs, ks))
+
+isderiving() = false
+Zygote.@adjoint isderiving() = true, _ -> nothing
+
 
 end
