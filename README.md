@@ -2,16 +2,26 @@
 
 A small wrapper around [CMBLensing.jl](https://github.com/marius311/CMBLensing.jl) which gives you a "black-box" posterior on which to test various inference algorithms. 
 
-See [README.ipynb](README.ipynb) for complete example and a canonical solution to compare against. 
+See [README.ipynb](README.ipynb) for complete example and a canonical HMC solution to compare against.
 
-## Usage
+## Requirements
 
-**Requires Julia 1.9 beta**
+* Julia 1.9+
 
-Clone this repo, instantiate the package environment, then open and run README.ipynb. 
+## Usage (working copy)
 
-## Note
+```
+git clone https://github.com/marius311/CMBLensingInferenceTestProblem
+cd CMBLensingInferenceTestProblem
+julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
+```
 
-If instead you want to install CMBLensingInferenceTestProblem.jl itself into a parent environment, make sure to also install the exact versions of CMBLensing, JLD2, and Memoization which are pinned in the repo's Manifest.toml. To see these versions, run `pkg> st` from this repo, then in the parent environment run e.g. `pkg> add CMBLensing#xxxxxxx` with the appropriate commit hash.
+Then open and run [README.ipynb](README.ipynb).
 
-(can get rid of this note once I get all the necessary changes merged upstream)
+## Usage (as a dependency)
+
+From the Julia environment for your project:
+
+```
+pkg> add https://github.com/marius311/CMBLensingInferenceTestProblem
+```
